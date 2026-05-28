@@ -35,7 +35,7 @@ MODELS = [
     # {"id": "gemini-2.5-pro", "object": "model", "created": 1700000000, "owned_by": "google"},
     # {"id": "gemini-2.5-flash", "object": "model", "created": 1700000000, "owned_by": "google"},
     # {"id": "gemini-2.5-flash-lite", "object": "model", "created": 1700000000, "owned_by": "google"},
-    # {"id": "gemini-2.5-flash-image", "object": "model", "created": 1700000000, "owned_by": "google"},
+    {"id": "gemini-2.5-flash-image", "object": "model", "created": 1700000000, "owned_by": "google"},
     # {"id": "gemini-2.5-pro-preview-tts", "object": "model", "created": 1700000000, "owned_by": "google"},
     # {"id": "gemini-2.5-flash-preview-tts", "object": "model", "created": 1700000000, "owned_by": "google"},
     # # Gemini 2.0 系列

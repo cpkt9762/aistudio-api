@@ -2,10 +2,24 @@ model_defaults:
   # profiles: 按模型名规则匹配，适合整类模型共用默认配置
   profiles:
     # 生图模型默认配置
+    - name: nano_banana_25
+      match:
+        exact:
+          - gemini-2.5-flash-image
+      is_image_model: true
+      generation_config_defaults:
+        response_mime_type: null
+        image_output_mode: image_only
+      clear_generation_config_indexes:
+        - 7
+        - 13
+        - 17
+      disable_safety_settings: true
+
     - name: image_models
       match:
         contains:
-          - image
+          - image-preview
       # 命中后视为生图模型
       is_image_model: true
       # 生图模型可选内置工具名：

@@ -227,10 +227,11 @@ class AistudioWireCodec:
             if value is None or not hasattr(request.generation_config, attr):
                 continue
             setattr(request.generation_config, attr, value)
-        request.generation_config.enable_default_thinking()
+        if model_defaults.is_image_model:
+            request.generation_config.thinking_config = None
+        else:
+            request.generation_config.enable_default_thinking()
 
-        # OpenAI chat compatibility should not inherit browser-side structured output
-        # or explicit reasoning settings from a previously captured AI Studio request.
         if sanitize_plain_text and not model_defaults.is_image_model:
             request.generation_config.sanitize_for_plain_text()
             request.generation_config.enable_default_thinking()
