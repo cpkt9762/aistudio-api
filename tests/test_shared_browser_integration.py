@@ -14,3 +14,17 @@ def test_session_shared_mode_routes_to_pool(monkeypatch):
     assert hasattr(sess, "_pool")
     assert sess._pool is not None
     assert sess._pool.browser_is_alive() is False
+
+
+def test_switch_active_account_is_fast(monkeypatch):
+    monkeypatch.setattr(settings, "shared_browser", True)
+    from aistudio_api.infrastructure.gateway.session import BrowserSession
+    sess = BrowserSession(port=0)
+    sess._pool.register("acc_a")
+    sess._pool.register("acc_b")
+    import time
+    t0 = time.time()
+    sess.switch_active_account_sync("acc_b")
+    dt = time.time() - t0
+    assert sess._pool.active_account_id == "acc_b"
+    assert dt < 0.05

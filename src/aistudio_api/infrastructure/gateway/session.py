@@ -162,6 +162,16 @@ class BrowserSession:
     async def switch_auth(self, auth_file: str | None) -> None:
         await self._run_sync(self._switch_auth_sync, auth_file)
 
+    def switch_active_account_sync(self, account_id: str) -> None:
+        if self._pool is None:
+            raise RuntimeError("switch_active_account only valid under shared_browser mode")
+        self._pool.set_active(account_id)
+
+    async def switch_active_account(self, account_id: str) -> None:
+        if self._pool is None:
+            raise RuntimeError("switch_active_account only valid under shared_browser mode")
+        await self._run_sync(self.switch_active_account_sync, account_id)
+
     async def ensure_hook_page(self):
         await self._run_sync(self._ensure_hook_page_sync)
         return True
