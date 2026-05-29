@@ -28,3 +28,17 @@ def test_switch_active_account_is_fast(monkeypatch):
     dt = time.time() - t0
     assert sess._pool.active_account_id == "acc_b"
     assert dt < 0.05
+
+
+@pytest.mark.skipif(not os.path.exists(
+    os.path.expanduser("~/Developer/work/AIGC/aistudio-api/data/accounts/acc_browseros/auth.json")
+), reason="acc_browseros fixture missing")
+def test_ensure_context_under_shared_mode(monkeypatch):
+    monkeypatch.setattr(settings, "shared_browser", True)
+    from aistudio_api.infrastructure.gateway.session import BrowserSession
+    sess = BrowserSession(port=0)
+    sess._pool.register("acc_browseros")
+    sess._pool.set_active("acc_browseros")
+    ctx = sess._ensure_browser_sync()
+    assert ctx is not None
+    sess._pool.close_browser_sync()

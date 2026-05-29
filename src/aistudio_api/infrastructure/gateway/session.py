@@ -535,6 +535,9 @@ class BrowserSession:
         self._close_sync()
 
     def _ensure_browser_sync(self):
+        if self._pool is not None:
+            return self._ensure_browser_pool_sync()
+
         if self._ctx is not None and self._hook_page is not None and not self._hook_page.is_closed():
             return self._ctx
 
@@ -567,6 +570,40 @@ class BrowserSession:
         self._install_hooks_sync(self._hook_page)
         log.debug(f"[timing] hooks installed in {_t.time()-_t0:.1f}s")
         return self._ctx
+
+    def _ensure_browser_pool_sync(self):
+        active_id = self._pool.active_account_id
+        if active_id is None:
+            raise RuntimeError("shared_browser: no active account set")
+        state = self._pool.get(active_id)
+        if state.context is not None and state.hook_page is not None and not state.hook_page.is_closed():
+            self._ctx = state.context
+            self._hook_page = state.hook_page
+            return state.context
+
+        auth_state = self._load_auth_state_for(active_id)
+        ctx = self._pool.ensure_context_sync(active_id, auth_state=auth_state)
+        state = self._pool.get(active_id)
+        if state.hook_page is None or state.hook_page.is_closed():
+            state.hook_page = ctx.pages[0] if ctx.pages else ctx.new_page()
+            sync_maximize_page_window(state.hook_page)
+            self._goto_aistudio_sync(state.hook_page)
+            self._install_hooks_sync(state.hook_page)
+            state.installed_hooks = True
+        self._ctx = state.context
+        self._hook_page = state.hook_page
+        self._snap_key = state.snap_key
+        self._templates = state.templates
+        return ctx
+
+    def _load_auth_state_for(self, account_id: str) -> dict | None:
+        path = Path("data/accounts") / account_id / "auth.json"
+        if not path.exists():
+            return None
+        try:
+            return json.loads(path.read_text())
+        except Exception:
+            return None
 
     def _ensure_browser_chromium_sync(self, _t0: float):
         """Chromium backend: prefer per-account persistent profile, fallback to auth.json."""
