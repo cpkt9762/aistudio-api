@@ -131,6 +131,23 @@ class AccountContextPool:
             state.last_used_ts = time.time()
             return state.context
 
+    def drop_context_sync(self, account_id: str) -> None:
+        with self._lock:
+            state = self._states.get(account_id)
+            if state is None:
+                return
+            ctx = state.context
+            state.context = None
+            state.hook_page = None
+            state.installed_hooks = False
+            state.templates.clear()
+            state.snap_key = None
+            if ctx is not None:
+                try:
+                    ctx.close()
+                except Exception:
+                    pass
+
     def health_snapshot(self) -> dict[str, dict]:
         with self._lock:
             return {

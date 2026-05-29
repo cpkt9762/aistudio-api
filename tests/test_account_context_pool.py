@@ -97,3 +97,27 @@ def test_pool_health_reports_per_account():
     for entry in health.values():
         assert "context_alive" in entry
         assert "last_used_ts" in entry
+
+
+def test_drop_context_keeps_browser():
+    pool = AccountContextPool(max_contexts=5)
+
+    class FakeBrowser:
+        def __init__(self):
+            self.contexts_created = 0
+
+        def new_context(self, **kwargs):
+            self.contexts_created += 1
+
+            class FakeCtx:
+                def close(inner): pass
+
+            return FakeCtx()
+
+    monkeypatch_browser = FakeBrowser()
+    pool._browser = monkeypatch_browser
+    pool.register("acc_a")
+    pool.ensure_context_sync("acc_a")
+    pool.drop_context_sync("acc_a")
+    assert pool.get("acc_a").context is None
+    assert pool._browser is monkeypatch_browser
