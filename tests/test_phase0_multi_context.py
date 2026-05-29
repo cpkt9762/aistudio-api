@@ -59,6 +59,28 @@ async def probe_snapshot_independence():
         return marker_a is not None and marker_b is not None
 
 
+async def probe_concurrent_eval():
+    state_a = _load_state(AUTH_A)
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
+        contexts = [await browser.new_context(storage_state=state_a) for _ in range(5)]
+        pages = []
+        for ctx in contexts:
+            page = await ctx.new_page()
+            await page.goto("about:blank")
+            pages.append(page)
+
+        async def heavy(p, i):
+            return await p.evaluate("(i) => { const t=Date.now(); while(Date.now()-t<150) {} return i*2; }", i)
+
+        import time
+        start = time.time()
+        results = await asyncio.gather(*(heavy(p, i) for i, p in enumerate(pages)))
+        wall = time.time() - start
+        await browser.close()
+        return results == [0, 2, 4, 6, 8] and wall < 1.0
+
+
 if __name__ == "__main__":
     import sys
     mode = sys.argv[1] if len(sys.argv) > 1 else "isolation"
@@ -66,6 +88,8 @@ if __name__ == "__main__":
         ok = asyncio.run(probe_isolation())
     elif mode == "snapshot":
         ok = asyncio.run(probe_snapshot_independence())
+    elif mode == "concurrent":
+        ok = asyncio.run(probe_concurrent_eval())
     else:
         raise SystemExit(f"unknown mode {mode}")
     print(f"{mode.upper()}_{'OK' if ok else 'FAIL'}")
