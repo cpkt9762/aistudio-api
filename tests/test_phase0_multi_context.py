@@ -40,6 +40,32 @@ async def probe_isolation():
         return True
 
 
+async def probe_snapshot_independence():
+    state_a = _load_state(AUTH_A)
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
+        ctx_a = await browser.new_context(storage_state=state_a)
+        ctx_b = await browser.new_context(storage_state=state_a)
+
+        async def get_visit_id(ctx):
+            page = await ctx.new_page()
+            await page.goto("https://aistudio.google.com/prompts/new_chat", wait_until="domcontentloaded", timeout=60_000)
+            await page.wait_for_timeout(4_000)
+            return await page.evaluate("() => localStorage.getItem('aistudio.visitorId') || document.cookie.length")
+
+        marker_a = await get_visit_id(ctx_a)
+        marker_b = await get_visit_id(ctx_b)
+        await browser.close()
+        return marker_a is not None and marker_b is not None
+
+
 if __name__ == "__main__":
-    ok = asyncio.run(probe_isolation())
-    print("ISOLATION_OK" if ok else "ISOLATION_FAIL")
+    import sys
+    mode = sys.argv[1] if len(sys.argv) > 1 else "isolation"
+    if mode == "isolation":
+        ok = asyncio.run(probe_isolation())
+    elif mode == "snapshot":
+        ok = asyncio.run(probe_snapshot_independence())
+    else:
+        raise SystemExit(f"unknown mode {mode}")
+    print(f"{mode.upper()}_{'OK' if ok else 'FAIL'}")
