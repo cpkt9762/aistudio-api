@@ -598,21 +598,24 @@ class BrowserSession:
         if state.context is not None and state.hook_page is not None and not state.hook_page.is_closed():
             self._ctx = state.context
             self._hook_page = state.hook_page
+            self._snap_key = state.snap_key
+            self._templates = state.templates
             return state.context
 
         auth_state = self._load_auth_state_for(active_id)
         ctx = self._pool.ensure_context_sync(active_id, auth_state=auth_state)
         state = self._pool.get(active_id)
+        self._templates = state.templates
         if state.hook_page is None or state.hook_page.is_closed():
             state.hook_page = ctx.pages[0] if ctx.pages else ctx.new_page()
             sync_maximize_page_window(state.hook_page)
             self._goto_aistudio_sync(state.hook_page)
             self._install_hooks_sync(state.hook_page)
             state.installed_hooks = True
+            state.snap_key = self._snap_key
         self._ctx = state.context
         self._hook_page = state.hook_page
         self._snap_key = state.snap_key
-        self._templates = state.templates
         return ctx
 
     def _load_auth_state_for(self, account_id: str) -> dict | None:

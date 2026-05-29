@@ -57,3 +57,42 @@ def test_get_cookies_for_active_account(monkeypatch):
     cookies = sess.get_cookies_for_active_account_sync()
     assert "SAPISID" in cookies
     sess._pool.close_browser_sync()
+
+
+import importlib
+from fastapi.testclient import TestClient
+
+
+@pytest.mark.skipif(not os.path.exists(
+    os.path.expanduser("~/Developer/work/AIGC/aistudio-api/data/accounts/acc_browseros/auth.json")
+), reason="acc_browseros fixture missing")
+def test_chat_end_to_end_shared_http(monkeypatch):
+    monkeypatch.setenv("AISTUDIO_SHARED_BROWSER", "1")
+    monkeypatch.setenv("AISTUDIO_REPLAY_MODE", "http")
+    monkeypatch.setenv("AISTUDIO_API_KEY", "testkey")
+    monkeypatch.setenv("AISTUDIO_PROXY", "http://127.0.0.1:6152")
+
+    import aistudio_api.config as cfg_mod
+    importlib.reload(cfg_mod)
+    import aistudio_api.api.app as app_mod
+    importlib.reload(app_mod)
+
+    with TestClient(app_mod.app) as client:
+        r = client.post(
+            "/accounts/acc_browseros/activate",
+            headers={"Authorization": "Bearer testkey"},
+            timeout=60,
+        )
+        assert r.status_code == 200, r.text
+
+        r = client.post(
+            "/v1/chat/completions",
+            headers={"Authorization": "Bearer testkey", "Content-Type": "application/json"},
+            json={
+                "model": "gemma-4-31b-it",
+                "messages": [{"role": "user", "content": "Reply with exactly: PHASE2_OK"}],
+            },
+            timeout=90,
+        )
+        assert r.status_code == 200, r.text
+        assert "PHASE2_OK" in r.json()["choices"][0]["message"]["content"]
