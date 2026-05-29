@@ -174,6 +174,7 @@ class Settings:
     snapshot_cache_max: int = int(os.getenv("AISTUDIO_SNAPSHOT_CACHE_MAX", "100"))
     dump_raw_response: bool = os.getenv("AISTUDIO_DUMP_RAW_RESPONSE", "0") in ("1", "true", "True")
     dump_raw_response_dir: str = os.getenv("AISTUDIO_DUMP_RAW_RESPONSE_DIR", "/tmp")
+    shared_browser: bool = os.getenv("AISTUDIO_SHARED_BROWSER", "0").strip().lower() not in ("", "0", "false", "no")
     accounts_dir: str = os.getenv("AISTUDIO_ACCOUNTS_DIR", "")
     # 账号轮询配置
     account_rotation_mode: str = os.getenv("AISTUDIO_ACCOUNT_ROTATION_MODE", "round_robin")  # round_robin, lru, least_rl
