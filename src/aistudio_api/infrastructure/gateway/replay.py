@@ -62,7 +62,7 @@ class RequestReplayService:
         import json
         from pathlib import Path
 
-        cookies = self._load_cookies_from_auth_file()
+        cookies = await self._fetch_cookies_for_replay()
 
         headers = {k: v for k, v in headers.items() if k.lower() != "authorization"}
         if "SAPISID" in cookies:
@@ -82,6 +82,15 @@ class RequestReplayService:
                 resp.status_code, len(raw), len(cookies), time.time() - t0,
             )
             return resp.status_code, raw
+
+    async def _fetch_cookies_for_replay(self) -> dict[str, str]:
+        from aistudio_api.config import settings as _settings
+        if _settings.shared_browser and self._session is not None and hasattr(self._session, "get_cookies_for_active_account"):
+            try:
+                return await self._session.get_cookies_for_active_account()
+            except Exception as exc:
+                logger.warning("HTTP replay: shared-mode cookie fetch failed (%s); falling back to auth.json", exc)
+        return self._load_cookies_from_auth_file()
 
     def _load_cookies_from_auth_file(self) -> dict[str, str]:
         import json
