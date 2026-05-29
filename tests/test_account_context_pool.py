@@ -50,3 +50,22 @@ def test_pool_set_active_unknown_raises():
     pool = AccountContextPool(max_contexts=5)
     with pytest.raises(KeyError):
         pool.set_active("acc_missing")
+
+
+def test_pool_starts_without_browser():
+    pool = AccountContextPool(max_contexts=5)
+    assert pool.browser_is_alive() is False
+
+
+def test_pool_ensure_browser_idempotent(monkeypatch):
+    pool = AccountContextPool(max_contexts=5)
+    launches = {"count": 0}
+
+    def fake_launch():
+        launches["count"] += 1
+        return object()
+
+    monkeypatch.setattr(pool, "_launch_browser_sync", fake_launch)
+    pool.ensure_browser_sync()
+    pool.ensure_browser_sync()
+    assert launches["count"] == 1

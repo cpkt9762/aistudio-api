@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any
+
+from aistudio_api.infrastructure.browser.browser_engine import (
+    build_browser_context_options,
+    sync_launch_browser,
+)
 
 
 @dataclass
@@ -21,6 +27,48 @@ class AccountContextPool:
         self._max = max_contexts
         self._states: dict[str, AccountContextState] = {}
         self._active_id: str | None = None
+        self._browser = None
+        self._playwright = None
+        self._cf = None
+        self._lock = threading.RLock()
+
+    def browser_is_alive(self) -> bool:
+        return self._browser is not None
+
+    def _launch_browser_sync(self):
+        return sync_launch_browser()
+
+    def ensure_browser_sync(self):
+        with self._lock:
+            if self._browser is not None:
+                return self._browser
+            result = self._launch_browser_sync()
+            if isinstance(result, tuple) and len(result) == 3:
+                self._browser, self._cf, self._playwright = result
+            else:
+                self._browser = result
+            return self._browser
+
+    def close_browser_sync(self):
+        with self._lock:
+            for state in list(self._states.values()):
+                ctx = state.context
+                if ctx is not None:
+                    try:
+                        ctx.close()
+                    except Exception:
+                        pass
+                state.context = None
+                state.hook_page = None
+                state.installed_hooks = False
+            if self._browser is not None:
+                try:
+                    self._browser.close()
+                except Exception:
+                    pass
+            self._browser = None
+            self._playwright = None
+            self._cf = None
 
     def has(self, account_id: str) -> bool:
         return account_id in self._states
