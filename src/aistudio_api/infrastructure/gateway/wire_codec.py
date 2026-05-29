@@ -228,7 +228,8 @@ class AistudioWireCodec:
                 continue
             setattr(request.generation_config, attr, value)
         if model_defaults.is_image_model:
-            request.generation_config.thinking_config = None
+            if "thinking_config" not in model_defaults.generation_config_defaults:
+                request.generation_config.thinking_config = None
         else:
             request.generation_config.enable_default_thinking()
 
