@@ -172,6 +172,25 @@ class BrowserSession:
             raise RuntimeError("switch_active_account only valid under shared_browser mode")
         await self._run_sync(self.switch_active_account_sync, account_id)
 
+    def get_cookies_for_active_account_sync(self) -> dict[str, str]:
+        if self._pool is None:
+            ctx = self._ctx
+        else:
+            active_id = self._pool.active_account_id
+            if active_id is None:
+                return {}
+            ctx = self._pool.get(active_id).context
+        if ctx is None:
+            return {}
+        cookies = {}
+        for c in ctx.cookies():
+            if "google" in c.get("domain", ""):
+                cookies[c["name"]] = c["value"]
+        return cookies
+
+    async def get_cookies_for_active_account(self) -> dict[str, str]:
+        return await self._run_sync(self.get_cookies_for_active_account_sync)
+
     async def ensure_hook_page(self):
         await self._run_sync(self._ensure_hook_page_sync)
         return True

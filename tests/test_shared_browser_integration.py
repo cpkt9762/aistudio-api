@@ -42,3 +42,18 @@ def test_ensure_context_under_shared_mode(monkeypatch):
     ctx = sess._ensure_browser_sync()
     assert ctx is not None
     sess._pool.close_browser_sync()
+
+
+@pytest.mark.skipif(not os.path.exists(
+    os.path.expanduser("~/Developer/work/AIGC/aistudio-api/data/accounts/acc_browseros/auth.json")
+), reason="acc_browseros fixture missing")
+def test_get_cookies_for_active_account(monkeypatch):
+    monkeypatch.setattr(settings, "shared_browser", True)
+    from aistudio_api.infrastructure.gateway.session import BrowserSession
+    sess = BrowserSession(port=0)
+    sess._pool.register("acc_browseros")
+    sess._pool.set_active("acc_browseros")
+    sess._ensure_browser_sync()
+    cookies = sess.get_cookies_for_active_account_sync()
+    assert "SAPISID" in cookies
+    sess._pool.close_browser_sync()
