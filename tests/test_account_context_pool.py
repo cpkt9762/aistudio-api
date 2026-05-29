@@ -69,3 +69,20 @@ def test_pool_ensure_browser_idempotent(monkeypatch):
     pool.ensure_browser_sync()
     pool.ensure_browser_sync()
     assert launches["count"] == 1
+
+
+def test_pool_ensure_context_uses_browser(monkeypatch):
+    pool = AccountContextPool(max_contexts=5)
+    calls = {"new_context": 0}
+
+    class FakeBrowser:
+        def new_context(self, **kwargs):
+            calls["new_context"] += 1
+            return f"ctx_{calls['new_context']}"
+
+    monkeypatch.setattr(pool, "_launch_browser_sync", lambda: FakeBrowser())
+    pool.register("acc_a")
+    pool.ensure_context_sync("acc_a", auth_state={"cookies": [], "origins": []})
+    pool.ensure_context_sync("acc_a", auth_state={"cookies": [], "origins": []})
+    assert calls["new_context"] == 1
+    assert pool.get("acc_a").context == "ctx_1"

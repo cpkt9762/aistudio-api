@@ -114,3 +114,19 @@ class AccountContextPool:
         victim = min(evictable, key=lambda s: s.last_used_ts)
         del self._states[victim.account_id]
         return victim.account_id
+
+    def ensure_context_sync(self, account_id: str, *, auth_state: dict | None = None):
+        with self._lock:
+            self.ensure_browser_sync()
+            state = self._states.get(account_id)
+            if state is None:
+                state = self.register(account_id)
+            if state.context is not None:
+                state.last_used_ts = time.time()
+                return state.context
+            options = build_browser_context_options()
+            if auth_state is not None:
+                options["storage_state"] = auth_state
+            state.context = self._browser.new_context(**options)
+            state.last_used_ts = time.time()
+            return state.context
