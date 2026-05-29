@@ -6,6 +6,7 @@ import asyncio
 
 import json
 import logging
+import os
 import threading
 import time
 import uuid
@@ -150,6 +151,10 @@ class BrowserSession:
         self._templates: dict[str, dict[str, Any]] = {}
         self._bootstrap_template: dict[str, Any] | None = None
         self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="aistudio-browser")
+        self._pool = None
+        if settings.shared_browser:
+            from aistudio_api.infrastructure.gateway.account_context_pool import AccountContextPool
+            self._pool = AccountContextPool(max_contexts=int(os.getenv("AISTUDIO_SHARED_BROWSER_MAX", "16")))
 
     async def ensure_context(self):
         return await self._run_sync(self._ensure_browser_sync)
