@@ -93,7 +93,9 @@ class AccountService:
                 await browser_session.switch_auth(str(auth_path))
                 await browser_session.ensure_context()
 
-            if not keep_snapshot_cache and snapshot_cache is not None:
+            if _settings.shared_browser and snapshot_cache is not None:
+                snapshot_cache.set_account_scope(account_id)
+            elif not keep_snapshot_cache and snapshot_cache is not None:
                 snapshot_cache.clear()
                 logger.info("已清除 snapshot 缓存")
 

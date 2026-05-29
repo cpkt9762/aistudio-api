@@ -15,9 +15,19 @@ logger = logging.getLogger("aistudio")
 
 class SnapshotCache:
     def __init__(self, ttl: int | None = None, max_size: int | None = None):
-        self._cache: OrderedDict[str, tuple] = OrderedDict()
+        self._by_account: dict[str, OrderedDict[str, tuple]] = {}
+        self._active_account: str = "__default__"
         self.ttl = ttl or settings.snapshot_cache_ttl
         self.max_size = max_size or settings.snapshot_cache_max
+
+    @property
+    def _cache(self) -> OrderedDict[str, tuple]:
+        return self._by_account.setdefault(self._active_account, OrderedDict())
+
+    def set_account_scope(self, account_id: str) -> None:
+        self._active_account = account_id or "__default__"
+        if self._active_account not in self._by_account:
+            self._by_account[self._active_account] = OrderedDict()
 
     @staticmethod
     def _hash(prompt: str) -> str:
