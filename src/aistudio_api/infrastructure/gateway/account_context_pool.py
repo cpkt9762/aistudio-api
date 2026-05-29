@@ -130,3 +130,15 @@ class AccountContextPool:
             state.context = self._browser.new_context(**options)
             state.last_used_ts = time.time()
             return state.context
+
+    def health_snapshot(self) -> dict[str, dict]:
+        with self._lock:
+            return {
+                aid: {
+                    "context_alive": state.context is not None,
+                    "hook_page_alive": state.hook_page is not None,
+                    "last_used_ts": state.last_used_ts,
+                    "is_active": aid == self._active_id,
+                }
+                for aid, state in self._states.items()
+            }

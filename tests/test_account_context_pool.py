@@ -86,3 +86,14 @@ def test_pool_ensure_context_uses_browser(monkeypatch):
     pool.ensure_context_sync("acc_a", auth_state={"cookies": [], "origins": []})
     assert calls["new_context"] == 1
     assert pool.get("acc_a").context == "ctx_1"
+
+
+def test_pool_health_reports_per_account():
+    pool = AccountContextPool(max_contexts=5)
+    pool.register("acc_a")
+    pool.register("acc_b")
+    health = pool.health_snapshot()
+    assert set(health.keys()) == {"acc_a", "acc_b"}
+    for entry in health.values():
+        assert "context_alive" in entry
+        assert "last_used_ts" in entry
