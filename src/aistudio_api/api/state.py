@@ -17,6 +17,7 @@ class RuntimeState:
     browser_port: int = 9222
     snapshot_cache: object | None = None  # SnapshotCache 实例
     account_service: object | None = None  # AccountService 实例
+    browser_session: object | None = None  # BrowserSession 实例 (避免循环导入用 object)
     rotator: object | None = None  # AccountRotator 实例
     anthropic_tool_context: dict[str, dict] = field(default_factory=dict)
     model_stats: dict[str, dict] = field(

@@ -39,6 +39,8 @@ async def lifespan(app: FastAPI):
         port=runtime_state.browser_port,
     )
     runtime_state.client = client
+    if runtime_state.client is not None:
+        runtime_state.browser_session = runtime_state.client._session
     from aistudio_api.config import settings as app_settings
     runtime_state.busy_lock = asyncio.Semaphore(app_settings.max_concurrency)
 
