@@ -48,6 +48,22 @@ async def build_inline_image_parts(image_files: list) -> list[AistudioPart]:
     return parts
 
 
+async def handle_unauth_error_in_shared_mode(account_id: str) -> bool:
+    from aistudio_api.config import settings as _settings
+    if not _settings.shared_browser:
+        return False
+    sess = runtime_state.browser_session
+    if sess is None or getattr(sess, "_pool", None) is None:
+        return False
+    sess._pool.drop_context_sync(account_id)
+    return True
+
+
+async def on_unauth_response(active_id: str) -> None:
+    await handle_unauth_error_in_shared_mode(active_id)
+    await try_switch_account()
+
+
 async def try_switch_account() -> bool:
     """尝试切换到下一个可用账号。返回是否成功切换。"""
     rotator = runtime_state.rotator
