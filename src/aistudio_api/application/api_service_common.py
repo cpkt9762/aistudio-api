@@ -118,6 +118,7 @@ def health_response() -> HealthResponse:
 
 
 def stats_response() -> StatsResponse:
+    from aistudio_api.config import settings as _settings
     stats = dict(runtime_state.model_stats)
     totals = StatsTotalsResponse(
         requests=sum(s["requests"] for s in stats.values()),
@@ -129,4 +130,14 @@ def stats_response() -> StatsResponse:
         total_tokens=sum(s["total_tokens"] for s in stats.values()),
     )
     models = {name: ModelStatsResponse(**values) for name, values in stats.items()}
-    return StatsResponse(models=models, totals=totals)
+
+    pool_snapshot: dict[str, dict] | None = None
+    if _settings.shared_browser:
+        sess = runtime_state.browser_session
+        if sess is not None and getattr(sess, "_pool", None) is not None:
+            try:
+                pool_snapshot = sess._pool.health_snapshot()
+            except Exception:
+                pool_snapshot = None
+
+    return StatsResponse(models=models, totals=totals, pool=pool_snapshot)

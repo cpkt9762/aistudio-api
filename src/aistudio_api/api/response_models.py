@@ -200,6 +200,7 @@ class StatsTotalsResponse(BaseModel):
 class StatsResponse(BaseModel):
     models: dict[str, ModelStatsResponse]
     totals: StatsTotalsResponse
+    pool: dict[str, dict] | None = None
 
 
 class ModelCardResponse(BaseModel):
