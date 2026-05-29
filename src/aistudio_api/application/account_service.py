@@ -79,24 +79,25 @@ class AccountService:
             return None
 
         async def _do_switch():
-            # 获取 auth 路径
+            from aistudio_api.config import settings as _settings
             auth_path = self._store.get_auth_path_optional(account_id, require_exists=False)
             if auth_path is None:
                 logger.error("账号 %s 的账号目录不存在", account_id)
                 return None
 
-            # 切换 BrowserSession 的 auth
-            await browser_session.switch_auth(str(auth_path))
-            await browser_session.ensure_context()
+            if _settings.shared_browser and hasattr(browser_session, "switch_active_account"):
+                if browser_session._pool is not None and not browser_session._pool.has(account_id):
+                    browser_session._pool.register(account_id)
+                await browser_session.switch_active_account(account_id)
+            else:
+                await browser_session.switch_auth(str(auth_path))
+                await browser_session.ensure_context()
 
-            # 切号后默认清理 snapshot，避免旧页面态和新账号 cookies 混用。
             if not keep_snapshot_cache and snapshot_cache is not None:
                 snapshot_cache.clear()
                 logger.info("已清除 snapshot 缓存")
 
-            # 更新注册表
             self._store.set_active_account(account_id)
-
             logger.info("已切换到账号: %s (%s)", account_id, account.name)
             return account
 
