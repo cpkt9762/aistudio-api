@@ -71,6 +71,7 @@ def test_chat_end_to_end_shared_http(monkeypatch):
     monkeypatch.setenv("AISTUDIO_REPLAY_MODE", "http")
     monkeypatch.setenv("AISTUDIO_API_KEY", "testkey")
     monkeypatch.setenv("AISTUDIO_PROXY", "http://127.0.0.1:6152")
+    monkeypatch.setattr(settings, "shared_browser", True)
 
     import aistudio_api.config as cfg_mod
     importlib.reload(cfg_mod)
