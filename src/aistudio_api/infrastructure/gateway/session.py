@@ -1153,7 +1153,7 @@ mw:((hash) => {
         for url in (AI_STUDIO_URL, AI_STUDIO_URL_FALLBACK):
             try:
                 _t0 = _t.time()
-                page.goto(url, wait_until="networkidle", timeout=30000)
+                page.goto(url, wait_until="load", timeout=60000)
                 log.debug(f"[timing] goto {url} took {_t.time()-_t0:.1f}s")
                 # 检查是否被重定向到登录页
                 current_url = page.url or ""
@@ -1165,8 +1165,11 @@ mw:((hash) => {
                 # Wait for SPA framework and chat UI to render
                 for _ in range(60):
                     page.wait_for_timeout(1000)
-                    has_dms = page.evaluate("mw:!!window.default_MakerSuite")
-                    has_textarea = page.query_selector("textarea") is not None
+                    try:
+                        has_dms = page.evaluate("mw:!!window.default_MakerSuite")
+                        has_textarea = page.query_selector("textarea") is not None
+                    except Exception:
+                        continue
                     if has_dms and has_textarea:
                         log.debug(f"[timing] UI ready (dms+textarea) after {_t.time()-_t0:.1f}s")
                         self._save_cookies_sync()

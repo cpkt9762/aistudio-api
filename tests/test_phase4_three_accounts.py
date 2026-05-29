@@ -11,7 +11,10 @@ def _list_account_dirs():
     return sorted(d for d in os.listdir("data/accounts") if d.startswith("acc_"))
 
 
-@pytest.mark.skipif(len(_list_account_dirs()) < 3, reason="need 3 accounts under data/accounts/acc_*")
+@pytest.mark.skipif(
+    not os.getenv("AISTUDIO_TEST_THREE_ACCOUNTS"),
+    reason="set AISTUDIO_TEST_THREE_ACCOUNTS=1 to run with >=3 real AI-Studio-activated fixtures",
+)
 def test_three_accounts_serial_isolation(monkeypatch):
     monkeypatch.setenv("AISTUDIO_SHARED_BROWSER", "1")
     monkeypatch.setenv("AISTUDIO_REPLAY_MODE", "http")
